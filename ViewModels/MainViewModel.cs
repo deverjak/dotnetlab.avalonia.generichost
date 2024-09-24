@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SimpleToDoList.Models;
 using SimpleToDoList.Services;
 
@@ -13,7 +14,7 @@ namespace SimpleToDoList.ViewModels;
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
-    public MainViewModel(IConfiguration configuration)
+    public MainViewModel(IConfiguration configuration, ILogger<MainViewModel> logger)
     {
         // We can use this to add some items for the designer. 
         // You can also use a DesignTime-ViewModel
@@ -26,9 +27,13 @@ public partial class MainViewModel : ViewModelBase
             });
         }
         TitleText = configuration["Todo:Title"] ?? "Hello Title";
+        _logger = logger;
+        _logger.LogInformation("MainViewModel created");
     }
 
     public string TitleText { get; init; }
+
+    private readonly ILogger<MainViewModel> _logger;
 
 
     /// <summary>
@@ -46,8 +51,9 @@ public partial class MainViewModel : ViewModelBase
     private void AddItem()
     {
         // Add a new item to the list
-        ToDoItems.Add(new ToDoItemViewModel() { Content = NewItemContent });
-
+        var item = new ToDoItemViewModel() { Content = NewItemContent };
+        ToDoItems.Add(item);
+        _logger.LogInformation("Added {Item}", item.Content);
         // reset the NewItemContent
         NewItemContent = null;
     }
@@ -75,5 +81,6 @@ public partial class MainViewModel : ViewModelBase
     {
         // Remove the given item from the list
         ToDoItems.Remove(item);
+        _logger.LogInformation("Deleted {Item}", item.Content);
     }
 }

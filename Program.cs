@@ -2,9 +2,16 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleToDoList.ViewModels;
-using SimpleToDoList.Views;
 using Microsoft.Extensions.Configuration;
-using SimpleToDoList.Avalonia;
+using System.Runtime.Versioning;
+using System.Runtime.CompilerServices;
+using Lemon.Hosting.AvaloniauiDesktop;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
+using Avalonia.Extensions.Hosting;
+using Avalonia.Logging;
+using Serilog;
+using SimpleToDoList.Serilog;
 
 namespace SimpleToDoList;
 
@@ -14,32 +21,63 @@ sealed class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args) =>
-        BuildAvaloniaApp(args)
-           .StartWithClassicDesktopLifetime(args);
-
-
-    // Avalonia configuration, don't remove; also used by visual designer.
-    public static AppBuilder BuildAvaloniaApp(string[] args)
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
+    [RequiresDynamicCode("Calls Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder()")]
+    public static void Main(string[] args)
     {
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddJsonFile("appsettings.json", optional: true);
-            })
-            .ConfigureServices((context, services) =>
-            {
-                services.AddSingleton<MainViewModel>();
-                services.AddSingleton<MainWindow>();
-            })
-            .Build();
 
-        // Store the ServiceProvider for later use
-        return AppBuilder.Configure<App>()
+        var hostBuilder = Host.CreateApplicationBuilder();
+
+
+        // config IConfiguration
+        hostBuilder.Configuration
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddCommandLine(args)
+            .AddEnvironmentVariables()
+            .AddInMemoryCollection();
+
+        // Configure Serilog from appsettings.json
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(hostBuilder.Configuration)
+            .Enrich.With(new CustomSerilogEnricher())
+            .CreateLogger();
+
+        // config ILogger
+        hostBuilder.Services.AddLogging(logging =>
+        {
+            logging.ClearProviders(); // Clears all logging providers
+            logging.AddSerilog();     // Use Serilog
+        });
+        // add some services
+
+        RunAppWithServiceProvider(hostBuilder, args);
+    }
+
+    public static AppBuilder ConfigAvaloniaAppBuilder(AppBuilder appBuilder) =>
+        appBuilder
             .UsePlatformDetect()
-            .WithInterFont()
-            .WithServiceProvider(host.Services)
-            .LogToTrace();
+            .WithInterFont();
+    //.LogToMySink(LogEventLevel.Verbose);
+
+
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private static void RunAppWithServiceProvider(HostApplicationBuilder hostBuilder, string[] args)
+    {
+        // add avaloniaui application and config AppBuilder
+        hostBuilder.Services.AddAvaloniauiDesktopApplication<App>(ConfigAvaloniaAppBuilder);
+        // add MainWindowViewModelWithParams
+        hostBuilder.Services.AddSingleton<MainViewModel>();
+        // build host
+        var appHost = hostBuilder.Build();
+
+        Logger.Sink = new AvaloniaLoggerSink(new Logger<AvaloniaLoggerSink>(appHost.Services.GetRequiredService<ILoggerFactory>()));
+        // run app
+        appHost.RunAvaloniauiApplication(args);
     }
 
 }

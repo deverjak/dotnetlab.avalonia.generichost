@@ -8,18 +8,13 @@ using SimpleToDoList.Views;
 
 namespace SimpleToDoList;
 
-public partial class App : Application
+public partial class App(IServiceProvider serviceProvider) : Application()
 {
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
-    }
-
-    public IServiceProvider? ServiceProvider { get; private set; }
-
-    public void SetServiceProvider(IServiceProvider serviceProvider)
-    {
-        ServiceProvider = serviceProvider;
     }
 
     // This is a reference to our MainViewModel which we use to save the list on shutdown. You can also use Dependency Injection 
@@ -30,7 +25,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            _mainViewModel = ServiceProvider?.GetRequiredService<MainViewModel>();
+            _mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
 
             desktop.MainWindow = new MainWindow
             {
@@ -52,6 +47,7 @@ public partial class App : Application
     // before we can actually close this window
 
     private bool _canClose; // This flag is used to check if window is allowed to close
+
     private async void DesktopOnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
         e.Cancel = !_canClose; // cancel closing event first time
