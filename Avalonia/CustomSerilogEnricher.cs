@@ -1,7 +1,7 @@
 using Serilog.Core;
 using Serilog.Events;
 
-namespace SimpleToDoList.Serilog;
+namespace SimpleToDoList;
 
 public class CustomSerilogEnricher : ILogEventEnricher
 {

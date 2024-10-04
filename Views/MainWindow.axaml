@@ -17,7 +17,7 @@
     </Design.DataContext>
 
     <!-- We give a name to the root grid in order to access it later -->
-    <Grid RowDefinitions="Auto, *, Auto"
+    <Grid RowDefinitions="Auto, *, Auto, Auto, Auto"
           x:Name="Root">
 
         <!-- This is our title text block. We use Style.Classes to style it accordingly -->
@@ -65,6 +65,9 @@
                 <KeyBinding Gesture="Enter" Command="{Binding AddItemCommand}" />
             </TextBox.KeyBindings>
         </TextBox>
+
+        <Button Grid.Row="3" Command="{Binding LogDataCommand}">Log Debug</Button>
+        <Button Grid.Row="4" Command="{Binding ChangeLogLevelCommand}">Change log level</Button>
     </Grid>
 
 </Window>

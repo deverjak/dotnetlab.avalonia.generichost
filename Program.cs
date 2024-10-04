@@ -9,9 +9,8 @@ using Lemon.Hosting.AvaloniauiDesktop;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Extensions.Hosting;
-using Avalonia.Logging;
 using Serilog;
-using SimpleToDoList.Serilog;
+using Serilog.Core;
 
 namespace SimpleToDoList;
 
@@ -30,21 +29,22 @@ sealed class Program
 
         var hostBuilder = Host.CreateApplicationBuilder();
 
-
+        var levelSwitch = new LoggingLevelSwitch();
+        levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Debug;
         // config IConfiguration
         hostBuilder.Configuration
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddCommandLine(args)
-            .AddEnvironmentVariables()
-            .AddInMemoryCollection();
+            .AddCommandLine(args);
 
         // Configure Serilog from appsettings.json
         Log.Logger = new LoggerConfiguration()
             .ReadFrom.Configuration(hostBuilder.Configuration)
+            .MinimumLevel.ControlledBy(levelSwitch)
             .Enrich.With(new CustomSerilogEnricher())
             .CreateLogger();
 
         // config ILogger
+        hostBuilder.Services.AddSingleton(levelSwitch);
         hostBuilder.Services.AddLogging(logging =>
         {
             logging.ClearProviders(); // Clears all logging providers
@@ -75,7 +75,7 @@ sealed class Program
         // build host
         var appHost = hostBuilder.Build();
 
-        Logger.Sink = new AvaloniaLoggerSink(new Logger<AvaloniaLoggerSink>(appHost.Services.GetRequiredService<ILoggerFactory>()));
+        Avalonia.Logging.Logger.Sink = new AvaloniaLoggerSink(new Logger<AvaloniaLoggerSink>(appHost.Services.GetRequiredService<ILoggerFactory>()));
         // run app
         appHost.RunAvaloniauiApplication(args);
     }

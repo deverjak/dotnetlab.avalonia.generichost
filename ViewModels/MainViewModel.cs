@@ -5,7 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SimpleToDoList.Models;
-using SimpleToDoList.Services;
+using Serilog.Core;
 
 namespace SimpleToDoList.ViewModels;
 
@@ -14,10 +14,14 @@ namespace SimpleToDoList.ViewModels;
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
-    public MainViewModel(IConfiguration configuration, ILogger<MainViewModel> logger)
+    public MainViewModel(IConfiguration configuration, ILogger<MainViewModel> logger, LoggingLevelSwitch levelSwitch)
     {
         // We can use this to add some items for the designer. 
         // You can also use a DesignTime-ViewModel
+        _logger = logger;
+        _configuration = configuration;
+        _levelSwitch = levelSwitch;
+
         if (Design.IsDesignMode)
         {
             ToDoItems = new ObservableCollection<ToDoItemViewModel>(new[]
@@ -26,14 +30,17 @@ public partial class MainViewModel : ViewModelBase
                 new ToDoItemViewModel() { Content = "Avalonia", IsChecked = true}
             });
         }
+
         TitleText = configuration["Todo:Title"] ?? "Hello Title";
-        _logger = logger;
+
         _logger.LogInformation("MainViewModel created");
     }
 
     public string TitleText { get; init; }
 
     private readonly ILogger<MainViewModel> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly LoggingLevelSwitch _levelSwitch;
 
 
     /// <summary>
@@ -82,5 +89,18 @@ public partial class MainViewModel : ViewModelBase
         // Remove the given item from the list
         ToDoItems.Remove(item);
         _logger.LogInformation("Deleted {Item}", item.Content);
+    }
+
+    [RelayCommand]
+    private void LogData()
+    {
+        _logger.LogDebug("The list has {Count} items", ToDoItems.Count);
+    }
+
+    [RelayCommand]
+    private void ChangeLogLevel()
+    {
+        _levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Information;
+        _logger.LogInformation("Changing LogLevel");
     }
 }
