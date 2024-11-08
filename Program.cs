@@ -9,8 +9,9 @@ using Lemon.Hosting.AvaloniauiDesktop;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Extensions.Hosting;
-using Serilog;
-using Serilog.Core;
+using System.Text.Json;
+using Loki.Extensions.Logging;
+using Karambolo.Extensions.Logging.File.Json;
 
 namespace SimpleToDoList;
 
@@ -29,26 +30,39 @@ sealed class Program
 
         var hostBuilder = Host.CreateApplicationBuilder();
 
-        var levelSwitch = new LoggingLevelSwitch();
-        levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Debug;
         // config IConfiguration
         hostBuilder.Configuration
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddCommandLine(args);
 
-        // Configure Serilog from appsettings.json
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(hostBuilder.Configuration)
-            .MinimumLevel.ControlledBy(levelSwitch)
-            .Enrich.With(new CustomSerilogEnricher())
-            .CreateLogger();
+
 
         // config ILogger
-        hostBuilder.Services.AddSingleton(levelSwitch);
         hostBuilder.Services.AddLogging(logging =>
         {
             logging.ClearProviders(); // Clears all logging providers
-            logging.AddSerilog();     // Use Serilog
+            logging.AddJsonConsole(options =>
+            {
+                options.JsonWriterOptions = new JsonWriterOptions
+                {
+                    Indented = false
+                };
+                options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+            });
+            logging.AddJsonFile(options =>
+            {
+                options.TextBuilder = new JsonFileLogEntryTextBuilder(new JsonFileLogFormatOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions
+                    {
+                        Indented = false // Disable JSON indentation
+                    }
+                });
+            });
+            logging.AddLoki(options =>
+            {
+                options.ApplicationName = "TodoList.App";
+            });
         });
         // add some services
 

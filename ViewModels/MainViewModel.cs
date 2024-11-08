@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SimpleToDoList.Models;
-using Serilog.Core;
 
 namespace SimpleToDoList.ViewModels;
 
@@ -14,13 +13,12 @@ namespace SimpleToDoList.ViewModels;
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
-    public MainViewModel(IConfiguration configuration, ILogger<MainViewModel> logger, LoggingLevelSwitch levelSwitch)
+    public MainViewModel(IConfiguration configuration, ILogger<MainViewModel> logger)
     {
         // We can use this to add some items for the designer. 
         // You can also use a DesignTime-ViewModel
         _logger = logger;
         _configuration = configuration;
-        _levelSwitch = levelSwitch;
 
         if (Design.IsDesignMode)
         {
@@ -40,7 +38,6 @@ public partial class MainViewModel : ViewModelBase
 
     private readonly ILogger<MainViewModel> _logger;
     private readonly IConfiguration _configuration;
-    private readonly LoggingLevelSwitch _levelSwitch;
 
 
     /// <summary>
@@ -100,7 +97,6 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void ChangeLogLevel()
     {
-        _levelSwitch.MinimumLevel = Serilog.Events.LogEventLevel.Information;
-        _logger.LogInformation("Changing LogLevel");
+        _logger.LogInformation("Not Changing LogLevel");
     }
 }
