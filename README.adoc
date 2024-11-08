@@ -12,7 +12,7 @@
 
 
 // Write a short summary here what this example does
-This example will show you how a simple ToDo-List App can be build using Avalonia in combination with the MVVM-Community-Toolkit.
+This example was took from Avalonia Samples. This example will show you how a simple ToDo-List App can be build using Avalonia in combination with the MVVM-Community-Toolkit.
 
 
 
